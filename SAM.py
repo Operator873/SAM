@@ -1171,3 +1171,7 @@ def domemory(bot, trigger):
             bot.say("Your stored information has not been altered. Please try again.")
     else:
         bot.say("It doesn't appear I have anything in memory to act on for you.")
+
+@module.commands('!samhelp')
+def samhelp(bot, trigger):
+    bot.say("Commands are listed at https://github.com/Operator873/SAM")
