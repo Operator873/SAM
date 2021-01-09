@@ -6,7 +6,7 @@
 ![GitHub All Releases](https://img.shields.io/github/downloads/Operator873/SAM/total)
 ![GitHub contributors](https://img.shields.io/github/contributors/Operator873/SAM)
 
-This is a Sopel IRC Bot plugin which supports Wikimedia sysops, global sysops, checkusers, and stewards by allowing block and lock actions from IRC. It could be modified quite easily to work with Miraheze or any other Mediawiki install.
+Steward/Sysop Action Module (SAM) is a Sopel IRC Bot plugin which supports Wikimedia sysops, global sysops, checkusers, and stewards by allowing block and lock actions from IRC. It could be modified quite easily to work with Miraheze or any other Mediawiki install.
 
 The development version of SAM is called [Darkness](https://github.com/Operator873/Darkness). Darkness was the original iteration of SAM.
 
