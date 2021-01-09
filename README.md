@@ -8,6 +8,8 @@
 
 This is a Sopel IRC Bot plugin which supports Wikimedia sysops, global sysops, checkusers, and stewards by allowing block and lock actions from IRC. It could be modified quite easily to work with Miraheze or any other Mediawiki install.
 
+The development version of SAM is called [Darkness](https://github.com/Operator873/Darkness). Darkness was the original iteration of SAM.
+
 I take absolutely no responsibility for anything you do on wiki with this plugin. Play stupid games, win stupid prizes... like being desysopped. 
 
 # Dependencies
