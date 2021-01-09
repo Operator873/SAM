@@ -31,7 +31,7 @@ I'm not a professional programmer. At best, I think of myself as a Python hobbyi
 
 This plugin requires OAuth 1.0a tokens configured on https://meta.wikimedia.org/wiki/Special:OAuthConsumerRegistration/propose.
 
-* Application name --> Anything you want it to be. I suggeste SAM
+* Application name --> Anything you want it to be. I suggest SAM
 * Consumer version --> Anything
 * OAuth protocol version --> OAuth 1.0a
 * Application description --> Bot plugin to assist with blocks and locks.
