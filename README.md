@@ -6,7 +6,7 @@
 ![GitHub All Releases](https://img.shields.io/github/downloads/Operator873/SAM/total)
 ![GitHub contributors](https://img.shields.io/github/contributors/Operator873/SAM)
 
-Steward/Sysop Action Module (SAM) is a Sopel IRC Bot plugin which supports Wikimedia sysops, global sysops, checkusers, and stewards by allowing block and lock actions from IRC. It could be modified quite easily to work with Miraheze or any other Mediawiki install.
+Steward/Sysop Action Module (SAM) is a Sopel IRC Bot module which supports Wikimedia sysops, global sysops, checkusers, and stewards by allowing block and lock actions from IRC. It could be modified quite easily to work with Miraheze or any other Mediawiki install.
 
 The development version of SAM is called [Darkness](https://github.com/Operator873/Darkness). Darkness was the original iteration of SAM.
 
@@ -14,7 +14,7 @@ I take absolutely no responsibility for anything you do on wiki with this module
 
 # Dependencies
 
-This plugin requires Python3.x and libraries: requests, sqlite3, json, re, and OAuth1. This plugin also requires SAM.db.
+This module requires Python3.x and libraries: requests, sqlite3, json, re, and OAuth1. This module also requires SAM.db.
 
 # WYSIWYG
 
@@ -29,12 +29,12 @@ I'm not a professional programmer. At best, I think of myself as a Python hobbyi
 
 # Configuration
 
-This plugin requires OAuth 1.0a tokens configured on https://meta.wikimedia.org/wiki/Special:OAuthConsumerRegistration/propose.
+This module requires OAuth 1.0a tokens configured on https://meta.wikimedia.org/wiki/Special:OAuthConsumerRegistration/propose.
 
 * Application name --> Anything you want it to be. I suggest SAM
 * Consumer version --> Anything
 * OAuth protocol version --> OAuth 1.0a
-* Application description --> Bot plugin to assist with blocks and locks.
+* Application description --> Bot module to assist with blocks and locks.
 * This consumer is for use only by _____ --> ***YOU MUST CHECK THIS BOX***
 * OAuth "callback" URL --> Blank
 * Allow consumer to specify a callback in requests and use "callback" URL above as a required prefix. --> Unchecked
