@@ -52,22 +52,22 @@ This module requires OAuth 1.0a tokens configured on https://meta.wikimedia.org/
 
 # Commands
 
-```!block target p=project d=duration r=Some reason here```
+```.block target p=project d=duration r=Some reason here```
   - Applies a standard block to the provided target. The target can be either an IP or an account
 
-```!lta target p=project```
+```.lta target p=project```
   - Applies a hard block with no email/talk page access on the provided target for 1 week. Block reason is hard coded to "[[Wikipedia:Blocks and bans#Evasion|Block evasion]]"
 
-```!tpa target p=project d=duration r=Some reason here```
+```.tpa target p=project d=duration r=Some reason here```
   - Reblocks with no talk page access and no email access with the provided reason for the provided duration
 
-```!reblock target p=project d=duration r=Some reason here```
+```.reblock target p=project d=duration r=Some reason here```
   - Reblocks the target. Useful for when your target is already blocked and you want to change the duration or reason.
 
-```!proxyblock target p=project d=duration```
+```.proxyblock target p=project d=duration```
   - Blocks the target IP with reason "[[m:NOP|Open proxy]]" for the provided duration
 
-```!gblock target d=duration r=Some reason here```
+```.gblock target d=duration r=Some reason here```
   - (Steward Action) Globally blocks the target IP and then blocks on metawiki.
   - Supports code words for reason
     - proxy --> [[m:NOP|Open proxy]]
@@ -76,7 +76,7 @@ This module requires OAuth 1.0a tokens configured on https://meta.wikimedia.org/
     - abuse --> cross wiki abuse
     - your typed reason --> your typed reason
 
-```!lock target r=Some reason here```
+```.lock target r=Some reason here```
   - (Steward Action) Locks an account
   - Supports code words for reason
     - proxy --> [[m:NOP|Open proxy]]
@@ -86,19 +86,19 @@ This module requires OAuth 1.0a tokens configured on https://meta.wikimedia.org/
     - banned or banned user --> Globally banned user
     - your typed reason --> your typed reason
 
-```!softblock target p=project d=duration r=Some reason here```
+```.softblock target p=project d=duration r=Some reason here```
   - Soft blocks (autoblock disabled, allow account creation) the provided target for the duration.
 
-```!unblock target p=project r=Some reason here```
+```.unblock target p=project r=Some reason here```
   - Unblocks the provided target with the reason.
 
-```!adduser TheirIRCaccount```
+```.adduser TheirIRCaccount```
   - This command tells the bot to add a new OAuth user to the database. The name should be the Freenode account, not the nick or WP account. See above guide for creating the required tokens. This command should be followed with a PM to the bot from the added user with their tokens.
   
-```!remUser TheirIRCaccount```
+```.remUser TheirIRCaccount```
   - Remove the nick and delete their tokens.
 
-```!tokens sad8gaysodiu a892e24hg 20847t2gaidhad 23984735tghad```
+```.tokens sad8gaysodiu a892e24hg 20847t2gaidhad 23984735tghad```
   - This command should ONLY be used via PM to the bot.
   - The provided tokens (the gibberish in the above example) are added to the database for the user PM'ing the bot.
   - The tokens are in the following order:
@@ -107,38 +107,37 @@ This module requires OAuth 1.0a tokens configured on https://meta.wikimedia.org/
     - access token
     - access secret
 
-```!getapi project```
+```.getapi project```
   - Debug command. Searches the database for the specified project and returns the apiurl
 
 ## Memory functions
 
-```!memadd <data>```
+```.memadd <data>```
   - Add the provided data to memory
 
-```!memdel <data>```
+```.memdel <data>```
   - Remove the provided data from memory
 
-```!memshow```
+```.memshow```
   - Show all currently stored data
 
-```!memclear```
+```.memclear```
   - Clears all data stored
 
-```!memory <action> <optional ags>```
+```.memory <action> <optional ags>```
   - Uses the contents of the memory to perform given actions. Once the action is complete, memory is wiped.
   
-```!memory block p=project d=duration r=Some reason here```
+```.memory block p=project d=duration r=Some reason here```
   - Blocks the accounts in memory on the project provided for the duration provided with the reason.
   
-```!memory lock r=Some reason here```
+```.memory lock r=Some reason here```
   - Locks the accounts
   
-```!memory gblock d=duration r=Some reason here```
+```.memory gblock d=duration r=Some reason here```
   - Globally blocks for the duration with reason
   
-```!memory lta p=project```
+```.memory lta p=project```
   - A quick hardblock for 7 days on the provided project
   
-```!memory test p=project d=duration r=Some reason here```
+```.memory test p=project d=duration r=Some reason here```
   - A test operation for debug purposes. Does not clear memory upon completion.
-  
