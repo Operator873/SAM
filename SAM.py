@@ -102,14 +102,14 @@ def getWiki(project):
     db = sqlite3.connect(SAM_DB)
     c = db.cursor()
     
-    site = c.execute('''SELECT apiurl FROM wikis WHERE wiki="%s";''' % project).fetchone()[0]
+    site = c.execute('''SELECT apiurl FROM wikis WHERE wiki="%s";''' % project).fetchone()
     
     db.close()
     
     if site is None:
         return None
     else:
-        return site
+        return site[0]
 
 def getCSRF(bot, site, creds, type):
     reqtoken = {
@@ -949,18 +949,12 @@ def commandTokens(bot, trigger):
 @module.commands('getapi')
 def getAPI(bot, trigger):
     # Setup dbase connection
-    db = sqlite3.connect(SAM_DB)
-    c = db.cursor()
-    wiki = str(trigger.group(3))
+    projapi = getWiki(trigger.group(3))
     
-    check = c.execute('''SELECT apiurl FROM wikis WHERE wiki="%s";''' % wiki).fetchone()
-    
-    db.close()
-    
-    if check is not None:
-        bot.say(check[0])
+    if projapi is not None:
+        bot.say(projapi)
     else:
-        bot.say("I don't know " + wiki + ". You can add it with !addapi <project> <api url>")
+        bot.say("I don't know " + trigger.group(3) + ". You can add it with !addapi <project> <api url>")
 
 @module.commands('addapi')
 def addapi(bot, trigger):
