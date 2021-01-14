@@ -814,7 +814,6 @@ def commandglobalBlock(bot, trigger):
         return
     else:
         try:
-            project = data['p']
             target = data['a']
             until = data['d']
             reason = data['r']
