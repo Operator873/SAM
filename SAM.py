@@ -814,6 +814,7 @@ def commandglobalBlock(bot, trigger):
         return
     else:
         try:
+            project = data['p']
             target = data['a']
             until = data['d']
             reason = data['r']
@@ -1098,10 +1099,12 @@ def domemory(bot, trigger):
                 bot.say("Malformed command. Syntax is !memory block p=project d=duration r=reason")
                 return
             
-            for item in dump['data']:
-                doBlock(bot, trigger.account, project.lower(), item[0], until, reason)
-            
-            devnull = clearmemory(trigger.account)
+            if getWiki(project) is not None:
+                for item in dump['data']:
+                    doBlock(bot, trigger.account, project.lower(), item[0], until, reason)
+                devnull = clearmemory(trigger.account)
+            else:
+                bot.say("I don't know that wiki.")
                 
         elif action.lower() == "lta":
             # !memory lta p=project
@@ -1112,10 +1115,12 @@ def domemory(bot, trigger):
                 bot.say("Malformed command. Syntax is !memory lta p=project")
                 return
             
-            for item in dump['data']:
-                doltaBlock(bot, trigger.account, project, item[0])
-            
-            devnull = clearmemory(trigger.account)
+            if getWiki(project) is not None:
+                for item in dump['data']:
+                    doltaBlock(bot, trigger.account, project, item[0])
+                devnull = clearmemory(trigger.account)
+            else:
+                bot.say("I don't know that wiki.")
         
         elif action.lower() == "gblock":
             # !memory gblock d=duration r=reason
@@ -1143,6 +1148,29 @@ def domemory(bot, trigger):
                 doGlobalblock(bot, trigger.account, item[0], until, reason)
             
             devnull = clearmemory(trigger.account)
+        
+        elif action.lower() == "spambot":
+            
+            # !memory target p=project d=duration r=reason
+            try:
+                reason = data['r']
+                until = data['d']
+                project = data['p']
+            except:
+                bot.say("Malformed command. Syntax is !memory test p=project d=duration r=reason")
+                return
+            
+            if reason.lower() == "spambot":
+                reason = "Spambot / Using Wikipedia for advertising"
+            elif reason.lower() == "gs spambot":
+                reason = "Spambot ([[m:GS|Global sysop]] action)"
+            
+            if getWiki(project) is not None:
+                for item in dump['data']:
+                    dorevokeTPA(bot, trigger.account, project.lower(), item[0], until, reason)
+                devnull = clearmemory(trigger.account)
+            else:
+                bot.say("I don't know that wiki.")
         
         elif action.lower() == "test":
             # !memory test p=project d=duration r=reason
