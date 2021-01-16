@@ -52,6 +52,8 @@ This module requires OAuth 1.0a tokens configured on https://meta.wikimedia.org/
 
 # Commands
 
+_Please note: The command character ```.``` below, is configured in the bot config. While the demo bot S-A-M is configured with ```.``` as the command character, other bots may use ```!``` or etc. Review your bot config._
+
 ```.block target p=project d=duration r=Some reason here```
   - Applies a standard block to the provided target. The target can be either an IP or an account
 
