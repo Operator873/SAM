@@ -1124,7 +1124,7 @@ def domemory(bot, trigger):
         elif action.lower() == "gblock":
             # !memory gblock d=duration r=reason
             try:
-                project = data['p']
+                until = data['d']
                 reason = data['r']
             except:
                 bot.say("Malformed command. Syntax is !memory gblock d=duration r=reason")
