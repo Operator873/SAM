@@ -293,8 +293,8 @@ def doGlobalblock(bot, name, target, until, reason):
     gblock = xmit(site, creds, block, "post")
     
     if 'error' in gblock:
-        failure = gblock['error']['info']
-        bot.say("Block failed! " + failure)
+        failure = gblock['error']['message']
+        bot.say("Block failed! " + str(failure))
     elif 'block' in gblock or 'globalblock' in gblock:
         user = gblock['globalblock']['user']
         expiry = gblock['globalblock']['expiry']
