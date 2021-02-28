@@ -718,7 +718,7 @@ def do_lwcu(bot, actor, target):
                 check = {
                     'ip': iptarget,
                     'api':"true",
-                    'key':"5e9edb5b0c016bacf9d256fba5491c85"
+                    'key':"obfuscated"
                 }
 
                 result = requests.get(ipurl, check).json()
