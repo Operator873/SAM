@@ -304,8 +304,11 @@ def doGlobalblock(bot, name, target, until, reason):
     gblock = xmit(site, creds, block, "post")
 
     if 'error' in gblock:
-        failure = gblock['error']['message']
-        bot.say("Block failed! " + str(failure))
+        failure = gblock['error']['globalblock'][0]
+        if failure['code'] == "globalblocking-block-alreadyblocked":
+            bot.say(target + " is already blocked.")
+        else:
+            bot.say("Block failed! " + str(failure['message']))
     elif 'block' in gblock or 'globalblock' in gblock:
         user = gblock['globalblock']['user']
         expiry = gblock['globalblock']['expiry']
@@ -715,7 +718,7 @@ def do_lwcu(bot, actor, target):
                 check = {
                     'ip': iptarget,
                     'api':"true",
-                    'key':"obfuscated"
+                    'key':"5e9edb5b0c016bacf9d256fba5491c85"
                 }
 
                 result = requests.get(ipurl, check).json()
