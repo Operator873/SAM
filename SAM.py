@@ -1,6 +1,5 @@
 import requests
 import sqlite3
-import json
 import re
 from requests_oauthlib import OAuth1
 from sopel import module
@@ -8,15 +7,16 @@ from sopel import module
 SAM_DB = "/home/ubuntu/.sopel/modules/SAM.db"
 CONTACT_OP = "You are not configured. Please contact Operator873."
 
+
 def addtomemory(user, payload):
     result = {}
     db = sqlite3.connect(SAM_DB)
     c = db.cursor()
-    
+
     check = c.execute('''SELECT * FROM memory WHERE user="%s" AND payload="%s";''' % (user, payload)).fetchall()
-    
+
     if len(check) == 0:
-    
+
         try:
             c.execute('''INSERT INTO memory VALUES("%s", "%s");''' % (user, payload))
             db.commit()
@@ -25,30 +25,32 @@ def addtomemory(user, payload):
         except Exception as e:
             result['status'] = "Failure"
             result['data'] = str(e)
-     
+
     else:
         result['status'] = "Success"
-        result['data'] = "'" + payload + "' is already in memory." 
-    
+        result['data'] = "'" + payload + "' is already in memory."
+
     db.close()
-    
+
     return result
-    
+
+
 def getfrommemory(user):
     result = {}
     db = sqlite3.connect(SAM_DB)
     c = db.cursor()
-    
+
     try:
         result['data'] = c.execute('''SELECT payload FROM memory WHERE user="%s";''' % user).fetchall()
         result['status'] = "Success"
     except Exception as e:
         result['status'] = "Failure"
         result['data'] = str(e)
-        
+
     db.close()
-    
+
     return result
+
 
 def delfrommemory(user, payload):
     result = {}
@@ -70,11 +72,12 @@ def delfrommemory(user, payload):
 
     return result
 
+
 def clearmemory(user):
     result = {}
     db = sqlite3.connect(SAM_DB)
     c = db.cursor()
-    
+
     try:
         c.execute('''DELETE FROM memory WHERE user="%s";''' % user)
         db.commit()
@@ -83,44 +86,47 @@ def clearmemory(user):
     except Exception as e:
         result['status'] = "Failure"
         result['data'] = str(e)
-        
+
     db.close()
 
     return result
 
+
 def xmit(site, creds, payload, method):
     # This handles the post/get requests
     AUTH = OAuth1(creds[1], creds[2], creds[3], creds[4])
-        
+
     if method == "post":
         return requests.post(site, data=payload, auth=AUTH).json()
     elif method == "get":
         return requests.get(site, params=payload, auth=AUTH).json()
 
+
 def getWiki(project):
     # Define dbase connection
     db = sqlite3.connect(SAM_DB)
     c = db.cursor()
-    
+
     site = c.execute('''SELECT apiurl FROM wikis WHERE wiki="%s";''' % project).fetchone()
-    
+
     db.close()
-    
+
     if site is None:
         return None
     else:
         return site[0]
 
+
 def getCSRF(bot, site, creds, type):
     reqtoken = {
-        'action':"query",
-        'meta':"tokens",
-        'format':"json",
-        'type':type
+        'action': "query",
+        'meta': "tokens",
+        'format': "json",
+        'type': type
     }
-    
+
     token = xmit(site, creds, reqtoken, "get")
-    
+
     # Check for errors and return csrf
     if 'error' in token:
         bot.say(token['error']['info'])
@@ -129,56 +135,58 @@ def getCSRF(bot, site, creds, type):
         csrfToken = token['query']['tokens']['%stoken' % type]
         return csrfToken
 
+
 def getCreds(name):
     # Setup dbase connection
     db = sqlite3.connect(SAM_DB)
     c = db.cursor()
-    
+
     # Get user credentials and prepare api url for use
     creds = c.execute('''SELECT * from auth where account="%s";''' % name).fetchall()[0]
     db.close()
-    
+
     if creds is not None:
         return creds
     else:
         return None
 
+
 def doBlock(bot, name, project, target, until, reason):
     creds = getCreds(name)
-    
+
     if creds is None:
         bot.say(CONTACT_OP)
         return
-    
+
     site = getWiki(project)
-    
+
     if site is None:
         bot.say("I don't know that wiki.")
         return
-    
+
     csrfToken = getCSRF(bot, site, creds, "csrf")
-    
+
     if csrfToken is False:
         return
-    
+
     if until == "indef" or until == "forever":
         until = "never"
-    
+
     reqBlock = {
         "action": "block",
         "user": target,
         "expiry": until,
         "reason": reason,
         "token": csrfToken,
-        "allowusertalk":"",
-        "nocreate":"",
-        "autoblock":"",
+        "allowusertalk": "",
+        "nocreate": "",
+        "autoblock": "",
         "format": "json"
     }
-    
+
     # Send block request
     block = xmit(site, creds, reqBlock, "post")
-        
+
     if 'error' in block:
         reason = block['error']['code']
         if reason == "badtoken":
@@ -188,7 +196,8 @@ def doBlock(bot, name, project, target, until, reason):
         elif reason == "permissiondenied":
             bot.say("Received permission denied error. Are you a sysop on " + project + "?")
         elif reason == "invalidexpiry":
-            bot.say("The expiration time isn't valid. I understand things like 31hours, 1week, 6months, infinite, indefinite.")
+            bot.say(
+                "The expiration time isn't valid. I understand things like 31hours, 1week, 6months, infinite, indefinite.")
         else:
             info = block['error']['info']
             code = block['error']['code']
@@ -201,44 +210,45 @@ def doBlock(bot, name, project, target, until, reason):
     else:
         bot.say("Unknown error: " + block)
 
+
 def doReblock(bot, name, project, target, until, reason):
     creds = getCreds(name)
-    
+
     if creds is None:
         bot.say(CONTACT_OP)
         return
-        
+
     site = getWiki(project)
-    
+
     if site is None:
         bot.say("I don't know that wiki.")
         return
-    
+
     csrfToken = getCSRF(bot, site, creds, "csrf")
-    
+
     if csrfToken is False:
         return
-    
+
     if until == "indef" or until == "forever":
         until = "never"
-        
+
     reqBlock = {
         "action": "block",
         "user": target,
         "expiry": until,
         "reason": reason,
         "token": csrfToken,
-        "allowusertalk":"",
-        "nocreate":"",
-        "autoblock":"",
-        "reblock":"",
-        "autoblock":"",
+        "allowusertalk": "",
+        "nocreate": "",
+        "autoblock": "",
+        "reblock": "",
+        "autoblock": "",
         "format": "json"
     }
-    
+
     # Send block request
     block = xmit(site, creds, reqBlock, "post")
-        
+
     if 'error' in block:
         reason = block['error']['code']
         if reason == "badtoken":
@@ -258,40 +268,41 @@ def doReblock(bot, name, project, target, until, reason):
     else:
         bot.say("Unknown error: " + block)
 
+
 def doGlobalblock(bot, name, target, until, reason):
     creds = getCreds(name)
-    
+
     if creds is None:
         bot.say(CONTACT_OP)
         return
-        
+
     site = getWiki("metawiki")
-    
+
     if site is None:
         bot.say("I don't know that wiki.")
         return
-    
+
     csrfToken = getCSRF(bot, site, creds, "csrf")
-    
+
     if csrfToken is False:
         return
-    
+
     if until == "indef" or until == "forever":
         until = "never"
-    
+
     block = {
-            "action": "globalblock",
-            "format": "json",
-            "target": target,
-            "expiry": until,
-            "reason": reason,
-            "alsolocal": True,
-            "token": csrfToken
-        }
-    
+        "action": "globalblock",
+        "format": "json",
+        "target": target,
+        "expiry": until,
+        "reason": reason,
+        "alsolocal": True,
+        "token": csrfToken
+    }
+
     # Send block request
     gblock = xmit(site, creds, block, "post")
-    
+
     if 'error' in gblock:
         failure = gblock['error']['message']
         bot.say("Block failed! " + str(failure))
@@ -302,113 +313,116 @@ def doGlobalblock(bot, name, target, until, reason):
     else:
         bot.say("Unknown failure... " + gblock)
 
+
 def doLock(bot, name, target, reason):
     creds = getCreds(name)
-    
+
     if creds is None:
         bot.say(CONTACT_OP)
         return
-    
+
     site = getWiki("metawiki")
-    
+
     if site is None:
         bot.say("I don't know that wiki.")
         return
-    
+
     csrfToken = getCSRF(bot, site, creds, "setglobalaccountstatus")
-    
+
     if csrfToken is False:
         return
-        
+
     lockRequest = {
-        "action":"setglobalaccountstatus",
-        "format":"json",
-        "user":target,
-        "locked":"lock",
-        "reason":reason,
-        "token":csrfToken
+        "action": "setglobalaccountstatus",
+        "format": "json",
+        "user": target,
+        "locked": "lock",
+        "reason": reason,
+        "token": csrfToken
     }
-    
+
     # Send block request
     lock = xmit(site, creds, lockRequest, "post")
-    
+
     if 'error' in lock:
         bot.say("lock failed! " + lock['error']['info'])
     else:
         bot.say(target + " locked.")
 
+
 def doUnlock(bot, name, target, reason):
     creds = getCreds(name)
-    
+
     if creds is None:
         bot.say(CONTACT_OP)
         return
-    
+
     site = getWiki("metawiki")
-    
+
     if site is None:
         bot.say("I don't know that wiki.")
         return
-    
+
     csrfToken = getCSRF(bot, site, creds, "setglobalaccountstatus")
-    
+
     if csrfToken is False:
         return
-        
+
     lockRequest = {
-        "action":"setglobalaccountstatus",
-        "format":"json",
-        "user":target,
-        "locked":"unlock",
-        "reason":reason,
-        "token":csrfToken
+        "action": "setglobalaccountstatus",
+        "format": "json",
+        "user": target,
+        "locked": "unlock",
+        "reason": reason,
+        "token": csrfToken
     }
-    
+
     # Send block request
     lock = xmit(site, creds, lockRequest, "post")
-    
+
     if 'error' in lock:
         bot.say("Unlock failed! " + lock['error']['info'])
     else:
         bot.say("Unlock succeeded. ")
 
+
 def dorevokeTPA(bot, name, project, target, until, reason):
     creds = getCreds(name)
-    
+
     if creds is None:
         bot.say(CONTACT_OP)
         return
-    
+
     site = getWiki(project)
-    
+
     if site is None:
         bot.say("I don't know that wiki.")
         return
-    
+
     csrfToken = getCSRF(bot, site, creds, "csrf")
-    
+
     if csrfToken is False:
         return
-    
+
     if until == "indef" or until == "forever":
         until = "never"
-        
+
     reqBlock = {
         "action": "block",
         "user": target,
         "expiry": until,
         "reason": reason,
         "token": csrfToken,
-        "noemail":"",
-        "nocreate":"",
-        "reblock":"",
-        "autoblock":"",
+        "noemail": "",
+        "nocreate": "",
+        "reblock": "",
+        "autoblock": "",
         "format": "json"
     }
-    
+
     # Send block request
     block = xmit(site, creds, reqBlock, "post")
-        
+
     if 'error' in block:
         reason = block['error']['code']
         if reason == "badtoken":
@@ -428,40 +442,41 @@ def dorevokeTPA(bot, name, project, target, until, reason):
     else:
         bot.say("Unknown error: " + block)
 
+
 def doltaBlock(bot, name, project, target):
     creds = getCreds(name)
-    
+
     if creds is None:
         bot.say(CONTACT_OP)
         return
-    
+
     site = getWiki(project)
-    
+
     if site is None:
         bot.say("I don't know that wiki.")
         return
-    
+
     csrfToken = getCSRF(bot, site, creds, "csrf")
-    
+
     if csrfToken is False:
         return
-        
+
     reqBlock = {
         "action": "block",
         "user": target,
         "expiry": "1week",
         "reason": "LTA / Block evasion",
         "token": csrfToken,
-        "noemail":"",
-        "nocreate":"",
-        "reblock":"",
-        "autoblock":"",
+        "noemail": "",
+        "nocreate": "",
+        "reblock": "",
+        "autoblock": "",
         "format": "json"
     }
-    
+
     # Send block request
     block = xmit(site, creds, reqBlock, "post")
-        
+
     if 'error' in block:
         reason = block['error']['code']
         if reason == "badtoken":
@@ -481,40 +496,41 @@ def doltaBlock(bot, name, project, target):
     else:
         bot.say("Unknown error: " + block)
 
+
 def doSoftblock(bot, name, project, target, until, reason):
     creds = getCreds(name)
-    
+
     if creds is None:
         bot.say(CONTACT_OP)
         return
-    
+
     site = getWiki(project)
-    
+
     if site is None:
         bot.say("I don't know that wiki.")
         return
-    
+
     csrfToken = getCSRF(bot, site, creds, "csrf")
-    
+
     if csrfToken is False:
         return
-    
+
     if until == "indef" or until == "forever":
         until = "never"
-        
+
     reqBlock = {
         "action": "block",
         "user": target,
         "expiry": until,
         "reason": reason,
         "token": csrfToken,
-        "allowusertalk":"",
+        "allowusertalk": "",
         "format": "json"
     }
-    
+
     # Send block request
     block = xmit(site, creds, reqBlock, "post")
-        
+
     if 'error' in block:
         reason = block['error']['code']
         if reason == "badtoken":
@@ -534,24 +550,25 @@ def doSoftblock(bot, name, project, target, until, reason):
     else:
         bot.say("Unknown error: " + block)
 
+
 def doUnblock(bot, name, project, target, reason):
     creds = getCreds(name)
-    
+
     if creds is None:
         bot.say(CONTACT_OP)
         return
-    
+
     site = getWiki(project)
-    
+
     if site is None:
         bot.say("I don't know that wiki.")
         return
-    
+
     csrfToken = getCSRF(bot, site, creds, "csrf")
-    
+
     if csrfToken is False:
         return
-        
+
     reqBlock = {
         "action": "unblock",
         "user": target,
@@ -559,10 +576,10 @@ def doUnblock(bot, name, project, target, reason):
         "token": csrfToken,
         "format": "json"
     }
-    
+
     # Send block request
     unblock = xmit(site, creds, reqBlock, "post")
-    
+
     if 'error' in unblock:
         reason = unblock['error']['info']
         bot.say(reason)
@@ -573,14 +590,15 @@ def doUnblock(bot, name, project, target, reason):
     else:
         bot.say("Unhandled error: " + unblock)
 
+
 def addUser(bot, name):
     # Setup dbase connection
     db = sqlite3.connect(SAM_DB)
     c = db.cursor()
-    
+
     # Check for user already existing
     check = c.execute('''SELECT * FROM auth WHERE account="%s";''' % name).fetchall()
-    
+
     if len(check) != 0:
         bot.say("User already exists!")
         db.close()
@@ -592,14 +610,15 @@ def addUser(bot, name):
         db.close()
         bot.say("User added.")
 
+
 def remUser(bot, name):
     # Setup dbase connection
     db = sqlite3.connect(SAM_DB)
     c = db.cursor()
-    
+
     # Check for user already existing
     check = c.execute('''SELECT * FROM auth WHERE account="%s";''' % name).fetchall()
-    
+
     if len(check) == 0:
         bot.say("User does not exist!")
         db.close()
@@ -609,25 +628,28 @@ def remUser(bot, name):
         db.close()
         bot.say("User deleted.")
 
+
 def addKeys(bot, name, info):
     # Setup dbase connection
     db = sqlite3.connect(SAM_DB)
     c = db.cursor()
-    
+
     try:
         c_token, c_secret, a_token, a_secret = info.split(" ")
     except Exception as e:
         bot.say(str(e))
-    
+
     check = c.execute('''SELECT * FROM auth WHERE account="%s";''' % name).fetchall()
-    
+
     if len(check) == 0:
         bot.say("You are not approved to add tokens. Contact Operator873.")
         db.close()
         return
     else:
         try:
-            c.execute('''UPDATE auth SET consumer_token="%s", consumer_secret="%s", access_token="%s", access_secret="%s" WHERE account="%s";''' % (c_token, c_secret, a_token, a_secret, name))
+            c.execute(
+                '''UPDATE auth SET consumer_token="%s", consumer_secret="%s", access_token="%s", access_secret="%s" WHERE account="%s";''' % (
+                c_token, c_secret, a_token, a_secret, name))
             bot.say("Keys added.")
         except Exception as e:
             bot.say(str(e))
@@ -635,34 +657,99 @@ def addKeys(bot, name, info):
             db.commit()
             db.close()
 
+
 def processinfo(info):
     info = "a=" + info
     l = re.split(r"(\w)=", info)[1:]
-    
-    data = {l[i]: l[i+1] for i in range(0, len(l), 2)}
-    
+
+    data = {l[i]: l[i + 1] for i in range(0, len(l), 2)}
+
     for key in data:
         data[key] = data[key].strip()
-    
+
     if 'd' in data:
-        adjust = re.sub(r"([0-9]+([0-9]+)?)",r" \1 ", data['d'])
+        adjust = re.sub(r"([0-9]+([0-9]+)?)", r" \1 ", data['d'])
         data['d'] = re.sub(' +', ' ', adjust).strip()
-    
+
     return data
 
+def do_lwcu(bot, actor, target):
+
+    creds = getCreds(actor)
+
+    if creds is None:
+        bot.say(CONTACT_OP)
+        return
+
+    site = "https://login.wikimedia.org/w/api.php"
+
+    csrfToken = getCSRF(bot, site, creds, "csrf")
+
+    if csrfToken is False:
+        return
+
+    query = {
+        'action': "query",
+        'list': "checkuser",
+        'curequest': "userips",
+        'cutarget': target,
+        'cureason': "Checking spambot for proxy",
+        'cutoken': csrfToken,
+        'cutimecond':"-3 months",
+        'format': "json"
+    }
+
+    data = xmit(site, creds, query, 'post')
+
+    if 'batchcomplete' in data:
+        try:
+            ips = data['query']['checkuser']['userips']
+        except Exception as e:
+            bot.say(str(e))
+
+        if len(ips) > 0:
+            for ip in ips:
+                iptarget = ip['address']
+                ipurl = "https://ipcheck.toolforge.org/index.php"
+
+                check = {
+                    'ip': iptarget,
+                    'api':"true",
+                    'key':"obfuscated"
+                }
+
+                result = requests.get(ipurl, check).json()
+
+                try:
+                    proxy1 = result['ipQualityScore']['result']['proxy']
+                    proxy2 = result['proxycheck']['result']['proxy']
+                except Exception as e:
+                    bot.say(str(e))
+                    proxy = None
+
+                if proxy1 is None and proxy2 is None:
+                    bot.say("No response received from proxy check")
+                    continue
+                elif proxy1 is True or proxy2 is True:
+                    bot.say("Proxy detected! Globally blocking...")
+                    doGlobalblock(bot, actor, iptarget, '3months', '[[:m:NOP|Open proxy]]')
+                    continue
+                else:
+                    continue
 
 @module.commands('testblock')
 @module.nickname_commands('testblock')
 def commandtestBlock(bot, trigger):
     # New syntax: !block Some Nick Here p=project d=duration r=reason
-    
+
     data = processinfo(trigger.group(2))
-    
+
     if len(data) < 4:
         bot.say("Command missing arguements: !block <target account> p=project d=duration r=reason for block")
         return
     elif data['a'] == '':
-        bot.say("Target of block must go first or be indicated with 'a=target account'. !block <target account> p=project d=duration r=reason for block")
+        bot.say(
+            "Target of block must go first or be indicated with 'a=target account'. !block <target account> p=project d=duration r=reason for block")
         return
     else:
         try:
@@ -673,21 +760,23 @@ def commandtestBlock(bot, trigger):
         except Exception as e:
             bot.say("Error! " + str(e))
             return
-        
+
         bot.say(target + " would be blocked on " + project + " for " + until + " with reason: " + reason)
+
 
 @module.commands('block')
 @module.nickname_commands('block')
 def commandBlock(bot, trigger):
     # New syntax: !block Some Nick Here p=project d=duration r=reason
-    
+
     data = processinfo(trigger.group(2))
-    
+
     if len(data) < 4:
         bot.say("Command missing arguements: !block <target account> p=project d=duration r=reason for block")
         return
     elif data['a'] == '':
-        bot.say("Target of block must go first or be indicated with 'a=target account'. !block <target account> p=project d=duration r=reason for block")
+        bot.say(
+            "Target of block must go first or be indicated with 'a=target account'. !block <target account> p=project d=duration r=reason for block")
         return
     else:
         try:
@@ -698,16 +787,17 @@ def commandBlock(bot, trigger):
         except Exception as e:
             bot.say("Error! " + str(e))
             return
-    
+
     doBlock(bot, trigger.account, project, target, until, reason)
+
 
 @module.commands('lta')
 @module.nickname_commands('lta')
 def commandltablock(bot, trigger):
     # New syntax: !lta Some Nick Here p=project
-    
+
     data = processinfo(trigger.group(2))
-    
+
     if len(data) < 2:
         bot.say("Command missing arguements: !lta Some Nick Here p=project")
         return
@@ -721,21 +811,23 @@ def commandltablock(bot, trigger):
         except Exception as e:
             bot.say("Error! " + str(e))
             return
-    
+
     doltaBlock(bot, trigger.account, project, target)
+
 
 @module.commands('tpa')
 @module.nickname_commands('tpa')
 def commandRevoketpa(bot, trigger):
     # New syntax: !tpa Some Nick Here p=project d=duration r=reason
-    
+
     data = processinfo(trigger.group(2))
-    
+
     if len(data) < 4:
         bot.say("Command missing arguements: !tpa <target account> p=project d=duration r=reason for block")
         return
     elif data['a'] == '':
-        bot.say("Target of block must go first or be indicated with 'a=target account'. !tpa <target account> p=project d=duration r=reason for block")
+        bot.say(
+            "Target of block must go first or be indicated with 'a=target account'. !tpa <target account> p=project d=duration r=reason for block")
         return
     else:
         try:
@@ -749,18 +841,20 @@ def commandRevoketpa(bot, trigger):
 
     dorevokeTPA(bot, trigger.account, project, target, until, reason)
 
+
 @module.commands('reblock')
 @module.nickname_commands('reblock')
 def commandreBlock(bot, trigger):
     # New syntax: !reblock Some Nick Here p=project d=duration r=reason
-    
+
     data = processinfo(trigger.group(2))
-    
+
     if len(data) < 4:
         bot.say("Command missing arguements: !reblock <target account> p=project d=duration r=reason for block")
         return
     elif data['a'] == '':
-        bot.say("Target of block must go first or be indicated with 'a=target account'. !reblock <target account> p=project d=duration r=reason for block")
+        bot.say(
+            "Target of block must go first or be indicated with 'a=target account'. !reblock <target account> p=project d=duration r=reason for block")
         return
     else:
         try:
@@ -771,21 +865,23 @@ def commandreBlock(bot, trigger):
         except Exception as e:
             bot.say("Error! " + str(e))
             return
-    
+
     doReblock(bot, trigger.account, project, target, until, reason)
+
 
 @module.commands('proxyblock')
 @module.nickname_commands('proxyblock')
 def commandproxyBlock(bot, trigger):
     # New syntax: !proxyblock Some Nick Here p=project d=duration
-    
+
     data = processinfo(trigger.group(2))
-    
+
     if len(data) < 3:
         bot.say("Command missing arguements: !proxyblock Some Nick Here p=project d=duration")
         return
     elif data['a'] == '':
-        bot.say("Target of block must go first or be indicated with 'a=target account'. !proxyblock Some Nick Here p=project d=duration")
+        bot.say(
+            "Target of block must go first or be indicated with 'a=target account'. !proxyblock Some Nick Here p=project d=duration")
         return
     else:
         try:
@@ -795,22 +891,24 @@ def commandproxyBlock(bot, trigger):
         except Exception as e:
             bot.say("Error! " + str(e))
             return
-    
+
     reason = "[[m:NOP|Open proxy]]"
     doReblock(bot, trigger.account, project, target, until, reason)
+
 
 @module.commands('gblock')
 @module.nickname_commands('gblock')
 def commandglobalBlock(bot, trigger):
     # New syntax: !gblock Some IP Here d=duration r=reason
-    
+
     data = processinfo(trigger.group(2))
-    
+
     if len(data) < 3:
         bot.say("Command missing arguements: !gblock Some IP Here d=duration r=reason")
         return
     elif data['a'] == '':
-        bot.say("Target of block must go first or be indicated with 'a=target account'. !gblock Some IP Here d=duration r=reason")
+        bot.say(
+            "Target of block must go first or be indicated with 'a=target account'. !gblock Some IP Here d=duration r=reason")
         return
     else:
         try:
@@ -831,16 +929,18 @@ def commandglobalBlock(bot, trigger):
         reason = "Cross wiki abuse"
     else:
         pass
-    
+
     doGlobalblock(bot, trigger.account, target, until, reason)
+
 
 @module.commands('lock')
 @module.nickname_commands('lock')
 def commandLock(bot, trigger):
     # New syntax: !lock Some Account r=reason
-    
+
     data = processinfo(trigger.group(2))
-    
+    docu = False
+
     if len(data) < 2:
         bot.say("Command missing arguements: !lock Some Account r=reason")
         return
@@ -860,15 +960,23 @@ def commandLock(bot, trigger):
     elif reason == "LTA" or reason == "lta":
         reason = "Long term abuse"
     elif reason == "spam":
+        docu = True
         reason = "Cross wiki spam"
+    elif reason == "spambot":
+        docu = True
+        reason = "Cross wiki spam: Spambot"
     elif reason == "abuse":
         reason = "Cross wiki abuse"
     elif reason == "banned" or reason == "banned user":
         reason = "Globally banned user"
     else:
         pass
-    
+
     doLock(bot, trigger.account, target, reason)
+    
+    if docu is True:
+        do_lwcu(bot, trigger.account, target)
+
 
 @module.commands('unlock')
 @module.nickname_commands('unlock')
@@ -877,18 +985,20 @@ def commandUnlock(bot, trigger):
     reason = "Unlock"
     doUnlock(bot, trigger.account, trigger.group(2), reason)
 
+
 @module.commands('softblock')
 @module.nickname_commands('softblock')
 def commandSoftblock(bot, trigger):
     # New syntax: # !softblock Some Nick Here p=project d=duration r=Some reason here.
-    
+
     data = processinfo(trigger.group(2))
-    
+
     if len(data) < 4:
         bot.say("Command missing arguements: !softblock Some Nick Here p=project d=duration r=Some reason here.")
         return
     elif data['a'] == '':
-        bot.say("Target of block must go first or be indicated with 'a=target account'. !softblock Some Nick Here p=project d=duration r=Some reason here.")
+        bot.say(
+            "Target of block must go first or be indicated with 'a=target account'. !softblock Some Nick Here p=project d=duration r=Some reason here.")
         return
     else:
         try:
@@ -899,21 +1009,23 @@ def commandSoftblock(bot, trigger):
         except Exception as e:
             bot.say("Error! " + str(e))
             return
-    
+
     doSoftblock(bot, trigger.account, project, target, until, reason)
+
 
 @module.commands('unblock')
 @module.nickname_commands('unblock')
 def commandUnblock(bot, trigger):
     # New syntax: !unblock Some Account Here p=project r=reason
-    
+
     data = processinfo(trigger.group(2))
-    
+
     if len(data) < 4:
         bot.say("Command missing arguements: !unblock Some Account Here p=project r=reason")
         return
     elif data['a'] == '':
-        bot.say("Target of block must go first or be indicated with 'a=target account'. !unblock Some Account Here p=project r=reason")
+        bot.say(
+            "Target of block must go first or be indicated with 'a=target account'. !unblock Some Account Here p=project r=reason")
         return
     else:
         try:
@@ -923,20 +1035,23 @@ def commandUnblock(bot, trigger):
         except Exception as e:
             bot.say("Error! " + str(e))
             return
-    
+
     doUnblock(bot, trigger.account, project, target, reason)
-    
+
+
 @module.require_owner(message="This function is only available to Operator873.")
 @module.commands('addUser')
 @module.nickname_commands('addUser')
 def commandAdd(bot, trigger):
     addUser(bot, trigger.group(2))
 
+
 @module.require_owner(message="This function is only available to Operator873.")
 @module.commands('remUser')
 @module.nickname_commands('remUser')
 def commandRem(bot, trigger):
     remUser(bot, trigger.group(2))
+
 
 @module.require_privmsg(message="This function must be used in PM.")
 @module.commands('tokens')
@@ -949,55 +1064,58 @@ def commandTokens(bot, trigger):
 def getAPI(bot, trigger):
     # Setup dbase connection
     projapi = getWiki(trigger.group(3))
-    
+
     if projapi is not None:
         bot.say(projapi)
     else:
         bot.say("I don't know " + trigger.group(3) + ". You can add it with !addapi <project> <api url>")
 
+
 @module.commands('addapi')
 def addapi(bot, trigger):
-    
     try:
         wiki, apiurl = trigger.group(2).split(' ', 1)
     except:
         bot.say("Malformed command. Syntax is '!addapi <project> <api url>")
         return
-    
+
     db = sqlite3.connect(SAM_DB)
     c = db.cursor()
-    
+
     check = c.execute('''SELECT * FROM wikis WHERE wiki="%s";''' % wiki).fetchone()
-    
+
     if check is not None:
         bot.say("I already know " + wiki + ". The api url is " + check[1])
     else:
         c.execute('''INSERT INTO wikis VALUES("%s", "%s");''' % (wiki, apiurl))
         db.commit()
         bot.say(wiki + " was added with url: " + apiurl)
-    
+
     db.close()
+
 
 @module.require_owner(message="This function is only available to Operator873.")
 @module.commands('delapi')
 def delapi(bot, trigger):
     db = sqlite3.connect(SAM_DB)
     c = db.cursor()
-    
+
     check = c.execute('''SELECT * FROM wikis WHERE wiki="%s";''' % trigger.group(3)).fetchone()
-    
+
     if check is None:
         bot.say(trigger.group(3) + " doesn't exist in the database.")
     else:
         c.execute('''DELETE FROM wikis WHERE wiki="%s";''' % trigger.group(3))
         db.commit()
         bot.say(trigger.group(3) + " was removed from the database.")
-    
+
     db.close()
+
 
 @module.commands('whoami')
 def whoami(bot, trigger):
     bot.say("You are " + trigger.nick + " using Freenode account: " + trigger.account + ".")
+
 
 @module.commands('memadd')
 def memadd(bot, trigger):
@@ -1007,28 +1125,31 @@ def memadd(bot, trigger):
     else:
         bot.say("Operator873 something blew up! " + response['data'])
 
+
 @module.commands('memclear')
 def memclear(bot, trigger):
     response = clearmemory(trigger.account)
-    
+
     if response['status'] == "Success":
         bot.say(response['data'])
     else:
         bot.say("Operator873 something blew up! " + response['data'])
+
 
 @module.commands('memdel')
 def memdel(bot, trigger):
     response = delfrommemory(trigger.account, trigger.group(2))
-    
+
     if response['status'] == "Success":
         bot.say(response['data'])
     else:
         bot.say("Operator873 something blew up! " + response['data'])
 
+
 @module.commands('memshow')
 def memshow(bot, trigger):
     payload = getfrommemory(trigger.account)
-    
+
     if payload['status'] == "Success":
         if len(payload['data']) > 0:
             response = ""
@@ -1044,6 +1165,7 @@ def memshow(bot, trigger):
         bot.say("An error occured fetching memory items. Ping Operator873")
         bot.say(payload['data'])
 
+
 @module.commands('memory')
 def domemory(bot, trigger):
     try:
@@ -1051,45 +1173,52 @@ def domemory(bot, trigger):
     except:
         bot.say("Missing data. Syntax is !memory <action> <optional args>")
         return
-    
+
     # New syntax: !memory <action> a=account p=project d=duration r=reason
-    
+
     dump = getfrommemory(trigger.account)
 
     data = processinfo(info)
-    
+
     if len(dump['data']) > 0:
-    
+
         if action.lower() == "lock":
             # !memory lock r=reason
-            
+            docu = False
+
             try:
                 reason = data['r']
             except:
                 bot.say("Malformed command. Syntax is !memory lock r=reason")
                 return
-            
+
             if reason.lower() == "proxy":
                 reason = "[[m:NOP|Open proxy]]"
             elif reason.lower() == "lta":
                 reason = "Long term abuse"
             elif reason.lower() == "spam":
+                docu = True
                 reason = "Cross wiki spam"
+            elif reason.lower() == "spambot":
+                docu = True
+                reason = "Cross wiki spam: Spambot"
             elif reason.lower() == "abuse":
                 reason = "Cross wiki abuse"
             elif reason.lower() == "banned" or reason.lower() == "banned user":
                 reason = "Globally banned user"
             else:
                 pass
-            
+
             for item in dump['data']:
                 doLock(bot, trigger.account, item[0], reason.strip())
-            
+                if docu is True:
+                    do_lwcu(bot, trigger.account, item[0])
+
             devnull = clearmemory(trigger.account)
-                
+
         elif action.lower() == "block":
             # !memory block p=project d=duration r=reason
-            
+
             try:
                 reason = data['r']
                 until = data['d']
@@ -1097,30 +1226,30 @@ def domemory(bot, trigger):
             except:
                 bot.say("Malformed command. Syntax is !memory block p=project d=duration r=reason")
                 return
-            
+
             if getWiki(project) is not None:
                 for item in dump['data']:
                     doBlock(bot, trigger.account, project.lower(), item[0], until, reason)
                 devnull = clearmemory(trigger.account)
             else:
                 bot.say("I don't know that wiki.")
-                
+
         elif action.lower() == "lta":
             # !memory lta p=project
-            
+
             try:
                 project = data['p']
             except:
                 bot.say("Malformed command. Syntax is !memory lta p=project")
                 return
-            
+
             if getWiki(project) is not None:
                 for item in dump['data']:
                     doltaBlock(bot, trigger.account, project, item[0])
                 devnull = clearmemory(trigger.account)
             else:
                 bot.say("I don't know that wiki.")
-        
+
         elif action.lower() == "gblock":
             # !memory gblock d=duration r=reason
             try:
@@ -1142,14 +1271,14 @@ def domemory(bot, trigger):
                 reason = "Globally banned user"
             else:
                 pass
-            
+
             for item in dump['data']:
                 doGlobalblock(bot, trigger.account, item[0], until, reason)
-            
+
             devnull = clearmemory(trigger.account)
-        
+
         elif action.lower() == "spambot":
-            
+
             # !memory target p=project d=duration r=reason
             try:
                 reason = data['r']
@@ -1158,19 +1287,19 @@ def domemory(bot, trigger):
             except:
                 bot.say("Malformed command. Syntax is !memory test p=project d=duration r=reason")
                 return
-            
+
             if reason.lower() == "spambot":
                 reason = "Spambot / Using Wikipedia for advertising"
             elif reason.lower() == "gs spambot":
                 reason = "Spambot ([[m:GS|Global sysop]] action)"
-            
+
             if getWiki(project) is not None:
                 for item in dump['data']:
                     dorevokeTPA(bot, trigger.account, project.lower(), item[0], until, reason)
                 devnull = clearmemory(trigger.account)
             else:
                 bot.say("I don't know that wiki.")
-        
+
         elif action.lower() == "test":
             # !memory test p=project d=duration r=reason
             try:
@@ -1180,17 +1309,19 @@ def domemory(bot, trigger):
             except:
                 bot.say("Malformed command. Syntax is !memory test p=project d=duration r=reason")
                 return
-            
+
             for item in dump['data']:
                 bot.say(item[0] + " would be blocked on " + project + ". Length: " + until + ". Reason: " + reason)
-            
+
             bot.say("I would clear memory now, but I haven't for testing.")
-            
+
         else:
-            bot.say("Error! I currently know lock, block, lta, and gblock. Ping Operator873 if additional command is needed.")
+            bot.say(
+                "Error! I currently know lock, block, lta, and gblock. Ping Operator873 if additional command is needed.")
             bot.say("Your stored information has not been altered. Please try again.")
     else:
         bot.say("It doesn't appear I have anything in memory to act on for you.")
+
 
 @module.commands('!samhelp')
 def samhelp(bot, trigger):
